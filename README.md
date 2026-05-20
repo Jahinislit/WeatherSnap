@@ -68,32 +68,6 @@ com.weathersnap/
 └── util/            # Utilities (image compression, weather codes)
 ```
 
-## Developer Judgment Challenge
-
-### Problem
-If the user is mid-report (has weather data, captured photo, entered notes) and rotates the device or backgrounds the app, the in-progress report must be recoverable without creating duplicate reports.
-
-### Approach: SavedStateHandle + Frozen Weather Snapshot
-
-**State Preservation:**
-- `CreateReportViewModel` uses `SavedStateHandle` to persist all in-progress report data (notes, image paths, compression sizes) across configuration changes and process death
-- The weather snapshot is serialized into the navigation route argument as JSON, ensuring the exact weather data from when report creation started is preserved — it is never re-fetched or silently replaced
-
-**Duplicate Prevention:**
-- Reports are only saved when the user explicitly taps "Save Report"
-- There is no auto-save mechanism that could create duplicates
-- The save operation is a single Room insert on the IO dispatcher
-
-**Temporary File Cleanup:**
-- `CreateReportViewModel.onCleared()` deletes temporary image files (both original capture and compressed) if the report was not saved
-- After a successful save, only the compressed image is kept; the original capture is deleted immediately
-- This prevents indefinite accumulation of temp files in the cache directory
-
-### Tradeoffs
-- **SavedStateHandle** has a size limit (~1MB), but we only store strings and longs, not image bytes — well within limits
-- Weather is passed as a JSON route argument rather than shared ViewModel to ensure it survives the full backstack lifecycle
-- If the app is force-killed during report creation and the user had already captured a photo, the captured file remains in cache but will be cleaned up by the OS eventually
-
 ## Debug Features
 
 - **Network Logging**: OkHttp logging interceptor is active only in debug builds, logging full request/response bodies for development debugging
@@ -105,6 +79,4 @@ If the user is mid-report (has weather data, captured photo, entered notes) and 
 3. **Custom Camera** — CameraX live preview with capture
 4. **Saved Reports** — All saved reports with full details
 
-## License
 
-This project was built as an assignment submission.
